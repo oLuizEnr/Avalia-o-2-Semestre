@@ -72,23 +72,28 @@ SELECT * FROM dCargos
 SELECT * FROM dEscolaridade
 
 --1) Views
-CREATE VIEW
---
+CREATE VIEW GastoEscolar AS
+SELECT
+	NomeCargo,
+	SUM(dFuncionários.Sálario) AS 'Gasto da Escola'
+FROM
+	dCargos
+INNER JOIN dFuncionários
+	ON dFuncionários.CargoID = dCargos.CargoID
+GROUP BY
+	NomeCargo
+-- Consegue visualizar quanto a escola está gastando com cada cargo
 
 --2) Subqueries
 SELECT
+	NomeAluno,
+	Ocorrências,
 	AlunoRM
 FROM
 	dAlunos
-WHERE Ocorrências < (
-	SELECT
-		Ocorrências
-	FROM
-		dAlunos
-	WHERE
-		EscolaridadeID = 1
-);
---
+WHERE Ocorrências < (SELECT AVG(Ocorrências)
+FROM dAlunos)
+-- Todos os alunos que tem uma quantidade de ocorrências menor que a média
 
 --3) CTE (Common Table Expression)
 WITH InformaçõesPorCargo
@@ -118,13 +123,40 @@ FROM
 -- Identifica as escolaridades, os alunos que estão incluidos nelas e a quantidade de ocorrências por escolaridade
 
 --5) Functions
+CREATE FUNCTION
+RETURNS
+AS
+BEGIN
+END
 --
 
 --6) Loops
 --
 
 --7) Procedures
---
+IF EXISTS(SELECT 1 FROM Sys.objects WHERE TYPE = 'P' AND NAME = 'ADD_AlUNO')
+BEGIN
+	DROP PROCEDURE ADD_ALUNO
+END
+GO
+CREATE PROCEDURE ADD_ALUNO
+	@AlunoRM INT,
+	@NomeAluno VARCHAR(20),
+	@EscolaridadeID INT,
+	@Ocorrências INT
+AS
+	INSERT INTO dAlunos (AlunoRM, NomeAluno, EscolaridadeID, Ocorrências)
+	VALUES (@AlunoRM, @NomeAluno, @EscolaridadeID, @Ocorrências);
+
+	SELECT * FROM dAlunos
+GO
+
+EXEC ADD_ALUNO
+@AlunoRM = 20,
+@NomeAluno = 'Matador de onça',
+@EscolaridadeID = 2,
+@Ocorrências = 100;
+-- Procedure que atualiza a tabela dos alunos, adcionando novos
 
 --8) Triggers
 CREATE TRIGGER FuncionárioNovo
@@ -133,14 +165,17 @@ AFTER INSERT
 AS
 BEGIN
 	DECLARE
-		@FuncionárioNovo VARCHAR;
+		@FuncionárioNovo VARCHAR(20);
 	SELECT
 		@FuncionárioNovo = NomeFuncionário FROM dFuncionários ORDER BY FuncionárioID;
-	PRINT @FuncionárioNovo  + 'Foi Adcionado! Não esqueça de dar a ele boas vindas.'
+	PRINT @FuncionárioNovo  + ' Foi Adcionado! Não esqueça de dar a ele boas vindas.'
 END
 GO
+
+INSERT INTO dFuncionários
+VALUES (10, 'John Wick', '(11) 90606-2228', 2100, 3, NULL)
 -- Usa um trigger para enviar uma mensagem confirmando a adição de um o novo funcionário automaticamente.
 
 DROP DATABASE Escola
 DROP TABLE dEscolaridade
-DROP TABLE dAlunos
+DROP TABLE dFuncionários
